@@ -1,0 +1,512 @@
+<html><head><base href="/" /><style>
+  :root {
+    --silver: #e7e7e7;
+    --blue: #407dd3;
+    --green: #57bf67;
+  }
+
+  body {
+    font-family: system-ui;
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    background: #222;
+    perspective: 1000px;
+  }
+
+  .pinball-machine {
+    width: 800px;
+    height: 1000px;
+    background: var(--silver);
+    border-radius: 20px;
+    position: relative;
+    transform: rotateX(20deg);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    transition: all 0.3s;
+  }
+
+  .playfield {
+    position: absolute;
+    top: 100px;
+    left: 50px;
+    right: 50px;
+    bottom: 100px;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .flipper {
+    position: absolute;
+    bottom: 50px;
+    width: 100px;
+    height: 20px;
+    background: var(--blue);
+    transform-origin: center left;
+    transition: transform 0.05s; /* Make transition faster for more responsive feel */
+    box-shadow: 0 0 10px var(--blue);
+  }
+
+  .flipper.left {
+    left: 100px;
+  }
+
+  .flipper.right {
+    right: 100px;
+    transform-origin: center right;
+  }
+
+  .bumper {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    animation: glow 1s infinite;
+  }
+
+  .bumper:nth-child(3n) {
+    background: #ff5555;
+  }
+  .bumper:nth-child(3n+1) {
+    background: var(--green);
+  }
+  .bumper:nth-child(3n+2) {
+    background: #ff55ff;
+  }
+
+  @keyframes glow {
+    0%, 100% { box-shadow: 0 0 10px currentColor; }
+    50% { box-shadow: 0 0 30px currentColor; }
+  }
+
+  .ball {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #fff;
+    transition: all 0.05s linear;
+  }
+
+  .plunger {
+    position: absolute;
+    right: 30px;
+    bottom: 50px;
+    width: 20px;
+    height: 100px;
+    background: var(--blue);
+  }
+
+  .score {
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 48px;
+    color: var(--green);
+    font-family: "Press Start 2P", monospace;
+    text-shadow: 0 0 10px var(--green);
+  }
+
+  .rail {
+    position: absolute;
+    top: 120px;
+    right: 100px;
+    width: 200px;
+    height: 100px;
+    border: 10px solid var(--blue);
+    border-bottom: none;
+    border-radius: 100px 100px 0 0;
+  }
+
+  .points-popup {
+    position: absolute;
+    color: var(--green);
+    font-size: 24px;
+    font-weight: bold;
+    animation: floatUp 1s forwards;
+    pointer-events: none;
+  }
+
+  @keyframes floatUp {
+    0% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(-50px); opacity: 0; }
+  }
+
+  .hole {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    background: #000;
+    border-radius: 50%;
+    box-shadow: inset 0 0 20px rgba(255,255,255,0.2);
+  }
+
+  .game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 72px;
+    color: white;
+    text-shadow: 0 0 20px rgba(255,255,255,0.5);
+    font-family: "Press Start 2P", monospace;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s;
+    z-index: 100;
+  }
+
+  .balls-left {
+    position: absolute;
+    top: 80px;
+    right: 50px;
+    font-size: 24px;
+    color: var(--green);
+    font-family: "Press Start 2P", monospace;
+    text-shadow: 0 0 10px var(--green);
+  }
+
+  .start-button {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 10px 20px;
+    font-size: 16px;
+    background: var(--green);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-family: "Press Start 2P", monospace;
+    box-shadow: 0 0 20px var(--green);
+    transition: all 0.2s;
+  }
+
+  .start-button:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px var(--green);
+  }
+
+  .controls {
+    position: fixed;
+    left: 20px;
+    bottom: 20px;
+    color: var(--green);
+    font-family: "Press Start 2P", monospace;
+    font-size: 14px;
+    text-shadow: 0 0 10px var(--green);
+  }
+
+  .pinball-machine.game-inactive {
+    filter: brightness(0.5);
+  }
+</style></head><body>
+
+<div class="controls">
+  CONTROLS:<br>
+  Z - Left Flipper<br>
+  / - Right Flipper<br>
+  SPACE - Launch Ball
+</div>
+<button class="start-button">START GAME</button>
+<div class="pinball-machine game-inactive">
+  <div class="playfield">
+    <div class="score">0</div>
+    <div class="balls-left">×5</div>
+    <div class="game-over">GAME OVER</div>
+    <div class="rail"></div>
+    <div class="bumper" style="top: 150px; left: 200px;"></div>
+    <div class="bumper" style="top: 150px; right: 200px;"></div>
+    <div class="bumper" style="top: 300px; left: 300px;"></div>
+    <div class="bumper" style="top: 250px; right: 300px;"></div>
+    <div class="bumper" style="top: 400px; left: 200px;"></div>
+    <div class="bumper" style="top: 200px; left: 400px;"></div>
+    <div class="bumper" style="top: 350px; right: 200px;"></div>
+    <div class="hole"></div>
+    <div class="flipper left"></div>
+    <div class="flipper right"></div>
+    <div class="ball"></div>
+    <div class="plunger"></div>
+  </div>
+</div>
+
+<audio id="flipperSound" src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"></audio>
+<audio id="bumperSound" src="https://assets.mixkit.co/active_storage/sfx/1434/1434-preview.mp3"></audio>
+<audio id="ballLostSound" src="https://assets.mixkit.co/active_storage/sfx/2658/2658-preview.mp3"></audio>
+<audio id="gameOverSound" src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"></audio>
+
+<script>
+const ball = document.querySelector('.ball');
+const flippers = document.querySelectorAll('.flipper');
+const bumpers = document.querySelectorAll('.bumper');
+const hole = document.querySelector('.hole');
+const ballsLeftDisplay = document.querySelector('.balls-left');
+const gameOverDisplay = document.querySelector('.game-over');
+const startButton = document.querySelector('.start-button');
+const pinballMachine = document.querySelector('.pinball-machine');
+const flipperSound = document.getElementById('flipperSound');
+const bumperSound = document.getElementById('bumperSound');
+const ballLostSound = document.getElementById('ballLostSound');
+const gameOverSound = document.getElementById('gameOverSound');
+let ballX = 400;
+let ballY = 200;
+let velocityX = 0;
+let velocityY = 0;
+const gravity = 0.5;
+let canLaunch = true;
+const ballRadius = 10;
+const bumperRadius = 30;
+let score = 0;
+const scoreElement = document.querySelector('.score');
+let ballStuckTimer = 0;
+const STUCK_THRESHOLD = 50;
+let ballInHole = false;
+let ballsLeft = 5;
+let gameActive = false;
+
+ball.style.opacity = '0';
+
+function showPoints(x, y, points) {
+  const popup = document.createElement('div');
+  popup.className = 'points-popup';
+  popup.textContent = `+${points}`;
+  popup.style.left = `${x}px`;
+  popup.style.top = `${y}px`;
+  ball.parentElement.appendChild(popup);
+  setTimeout(() => popup.remove(), 1000);
+}
+
+function showGameOver() {
+  gameActive = false;
+  gameOverDisplay.style.opacity = '1';
+  ball.style.opacity = '0';
+  pinballMachine.classList.add('game-inactive');
+  gameOverSound.play();
+}
+
+function checkHoleCollision() {
+  const holeRect = hole.getBoundingClientRect();
+  const holeX = holeRect.left + holeRect.width/2 - ball.parentElement.getBoundingClientRect().left;
+  const holeY = holeRect.top + holeRect.height/2 - ball.parentElement.getBoundingClientRect().top;
+  
+  const dx = ballX + ballRadius - holeX;
+  const dy = ballY + ballRadius - holeY;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  
+  if (distance < 20 && !ballInHole) {
+    ballInHole = true;
+    ball.style.opacity = '0';
+    ballsLeft--;
+    ballsLeftDisplay.textContent = `×${ballsLeft}`;
+    ballLostSound.play();
+    
+    if (ballsLeft > 0) {
+      setTimeout(() => {
+        ball.style.opacity = '1';
+        autoLaunch();
+        ballInHole = false;
+      }, 5000);
+    } else {
+      showGameOver();
+    }
+  }
+}
+
+function checkBumperCollision() {
+  bumpers.forEach(bumper => {
+    const bumperRect = bumper.getBoundingClientRect();
+    const bumperX = bumperRect.left + bumperRadius - ball.parentElement.getBoundingClientRect().left;
+    const bumperY = bumperRect.top + bumperRadius - ball.parentElement.getBoundingClientRect().top;
+    
+    const dx = ballX + ballRadius - bumperX;
+    const dy = ballY + ballRadius - bumperY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    if (distance < bumperRadius + ballRadius) {
+      const angle = Math.atan2(dy, dx);
+      const speed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+      const newSpeed = Math.max(speed * 1.5, 15);
+      const randomAngle = angle + (Math.random() - 0.5) * 0.5;
+      
+      velocityX = Math.cos(randomAngle) * newSpeed;
+      velocityY = Math.sin(randomAngle) * newSpeed;
+      
+      const overlap = (bumperRadius + ballRadius) - distance;
+      ballX += Math.cos(angle) * overlap;
+      ballY += Math.sin(angle) * overlap;
+
+      velocityX += (Math.random() - 0.5) * 5;
+      velocityY += (Math.random() - 0.5) * 5;
+
+      score += 100;
+      scoreElement.textContent = score;
+      showPoints(bumperX, bumperY, 100);
+      
+      bumper.style.transform = 'scale(1.2)';
+      setTimeout(() => bumper.style.transform = 'scale(1)', 100);
+      
+      bumperSound.currentTime = 0;
+      bumperSound.play();
+    }
+  });
+
+  if (ballY < 150 && ballX > 400) {
+    const railBounceSpeed = Math.random() * 5 + 15;
+    const railBounceAngle = Math.PI * (0.6 + Math.random() * 0.3);
+    velocityX = Math.cos(railBounceAngle) * railBounceSpeed;
+    velocityY = Math.sin(railBounceAngle) * railBounceSpeed;
+  }
+}
+
+function checkFlipperCollision() {
+  flippers.forEach((flipper, index) => {
+    const flipperRect = flipper.getBoundingClientRect();
+    const flipperX = flipperRect.left + flipperRect.width/2 - ball.parentElement.getBoundingClientRect().left;
+    const flipperY = flipperRect.top + flipperRect.height/2 - ball.parentElement.getBoundingClientRect().top;
+    
+    const rotation = flipper.style.transform ? 
+      parseInt(flipper.style.transform.match(/-?\d+/)[0]) : 0;
+    
+    if (Math.abs(ballY - flipperY) < 30 && Math.abs(ballX - flipperX) < 60) {
+      if (rotation !== 0) {
+        if (index === 0) { // Left flipper
+          velocityY = -25; // Increased upward velocity
+          velocityX = -15; // Increased leftward velocity
+        } else { // Right flipper
+          velocityY = -25;
+          velocityX = 5;
+        }
+        flipperSound.currentTime = 0;
+        flipperSound.play();
+      }
+    }
+  });
+}
+
+function isballStuck() {
+  return Math.abs(velocityX) < 0.5 && Math.abs(velocityY) < 0.5;
+}
+
+function autoLaunch() {
+  ballX = 650;
+  ballY = 600;
+  velocityY = -20;
+  velocityX = -5 + Math.random() * 10;
+}
+
+function updateBall() {
+  if (!ballInHole && gameActive) {
+    velocityY += gravity;
+    
+    ballX += velocityX;
+    ballY += velocityY;
+    
+    velocityX *= 0.99;
+    velocityY *= 0.99;
+    
+    checkHoleCollision();
+    
+    if (isballStuck()) {
+      ballStuckTimer++;
+      if (ballStuckTimer > STUCK_THRESHOLD) {
+        autoLaunch();
+        ballStuckTimer = 0;
+      }
+    } else {
+      ballStuckTimer = 0;
+    }
+    
+    if (ballY < 400) {
+      velocityX += (Math.random() - 0.5) * 0.5;
+      velocityY += (Math.random() - 0.5) * 0.5;
+      
+      const currentSpeed = Math.sqrt(velocityX * velocityX + velocityY * velocityY);
+      if (currentSpeed < 5) {
+        const multiplier = 5 / currentSpeed;
+        velocityX *= multiplier;
+        velocityY *= multiplier;
+      }
+    }
+    
+    if (ballX < 0 || ballX > 700) {
+      velocityX *= -0.9;
+      ballX = ballX < 0 ? 0 : 700;
+      velocityY += (Math.random() - 0.5) * 5;
+    }
+    
+    if (ballY < 0 || ballY > 700) {
+      velocityY *= -0.9;
+      ballY = ballY < 0 ? 0 : 700;
+      velocityX += (Math.random() - 0.5) * 5;
+    }
+    
+    checkFlipperCollision();
+    checkBumperCollision();
+    
+    ball.style.transform = `translate(${ballX}px, ${ballY}px)`;
+  }
+  
+  if (gameActive) {
+    requestAnimationFrame(updateBall);
+  }
+}
+
+function startGame() {
+  gameActive = true;
+  score = 0;
+  scoreElement.textContent = '0';
+  ballsLeft = 5;
+  ballsLeftDisplay.textContent = `×${ballsLeft}`;
+  gameOverDisplay.style.opacity = '0';
+  ball.style.opacity = '1';
+  pinballMachine.classList.remove('game-inactive');
+  autoLaunch();
+  updateBall();
+}
+
+startButton.addEventListener('click', startGame);
+
+setInterval(() => {
+  if (ballY > 800 && gameActive) {
+    canLaunch = true;
+    autoLaunch();
+  }
+}, 1000);
+
+document.addEventListener('keydown', (e) => {
+  if (gameActive) {
+    if (e.key === 'z' || e.key === 'Z') {
+      flippers[0].style.transform = 'rotate(-30deg)';
+    }
+    if (e.key === '/') {
+      flippers[1].style.transform = 'rotate(30deg)';
+    }
+    if (e.key === ' ' && canLaunch) { // Spacebar
+      autoLaunch();
+      canLaunch = false;
+    }
+  }
+});
+
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'z' || e.key === 'Z') {
+    flippers[0].style.transform = 'rotate(0deg)';
+  }
+  if (e.key === '/') {
+    flippers[1].style.transform = 'rotate(0deg)';
+  }
+});
+
+ballX = 650;
+ballY = 600;
+ballsLeftDisplay.textContent = `×${ballsLeft}`;
+
+updateBall();
+</script></body></html>
